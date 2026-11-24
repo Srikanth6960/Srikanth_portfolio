@@ -5,6 +5,7 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 
 const app = express();
+const PUBLIC_DIR = path.join(__dirname, 'public');
 const PORT = Number(process.env.PORT || 3000);
 const MAIL_TO = process.env.MAIL_TO || 'tejavathsrikanth60@gmail.com';
 const SMTP_USER = process.env.SMTP_USER;
@@ -39,7 +40,7 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.use(express.static(__dirname));
+app.use(express.static(PUBLIC_DIR));
 
 function escapeHtml(value) {
   return value
@@ -141,7 +142,7 @@ app.use((error, req, res, next) => {
 });
 
 app.get('*', (_, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 app.listen(PORT, () => {
