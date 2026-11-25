@@ -1,18 +1,59 @@
-/* Core behaviour: theme, navigation, ticker, spotlight and scroll progress. Loaded first. */
-const root=document.documentElement,$=id=>document.getElementById(id);
-try{const t=localStorage.getItem("theme");if(t)root.dataset.theme=t;else if(matchMedia("(prefers-color-scheme: light)").matches)root.dataset.theme="light"}catch(e){}
-$("theme").onclick=()=>{const t=root.dataset.theme==="dark"?"light":"dark";root.dataset.theme=t;try{localStorage.setItem("theme",t)}catch(e){}};
-const links=$("links"),burger=$("burger");
-burger.onclick=()=>{const o=links.classList.toggle("open");burger.setAttribute("aria-expanded",o)};
-links.addEventListener("click",e=>{if(e.target.closest("a")){links.classList.remove("open");burger.setAttribute("aria-expanded",false)}});
+const $ = (selector) => document.querySelector(selector);
+const windows = [...document.querySelectorAll("[data-window]")];
+let topIndex = 60;
 
-/* Marquee and card spotlight */
-const mi=$("mqi"),tk="React.js,Python,Node.js,MongoDB,Tailwind CSS,UI/UX,IoT,Machine Learning,Firebase,Git".split(",").map(t=>"<span>"+t+"</span>").join("");mi.innerHTML=tk+tk;
-document.addEventListener("pointermove",e=>{const c=e.target.closest(".box,.sk,.dz");if(c){const r=c.getBoundingClientRect();c.style.setProperty("--mx",e.clientX-r.left+"px");c.style.setProperty("--my",e.clientY-r.top+"px")}});
+function openWindow(name) {
+  const win = document.querySelector(`[data-window="${name}"]`);
+  if (!win) return;
+  win.classList.add("open");
+  win.setAttribute("aria-hidden", "false");
+  win.style.zIndex = ++topIndex;
+  const bar = win.querySelector(".window-bar");
+  if (bar) bar.focus();
+}
 
+function closeWindow(win) {
+  win.classList.remove("open");
+  win.setAttribute("aria-hidden", "true");
+}
 
-/* Scroll progress and active nav link */
-const pg=$("pg");addEventListener("scroll",()=>{pg.style.width=scrollY/(document.body.scrollHeight-innerHeight)*100+"%"},{passive:true});
-const nl=[...document.querySelectorAll(".links a[href^='#']:not(.btn)")];
-const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)nl.forEach(a=>a.classList.toggle("act",a.getAttribute("href")==="#"+e.target.id))}),{rootMargin:"-45% 0px -50% 0px"});
-document.querySelectorAll("section[id]").forEach(x=>io.observe(x));
+document.querySelectorAll("[data-open]").forEach((control) => {
+  control.addEventListener("click", (event) => {
+    event.preventDefault();
+    openWindow(control.dataset.open);
+  });
+});
+
+document.querySelectorAll("[data-close]").forEach((button) => {
+  button.addEventListener("click", () => closeWindow(button.closest("[data-window]")));
+});
+
+document.querySelectorAll(".window").forEach((win) => {
+  win.addEventListener("pointerdown", () => win.style.zIndex = ++topIndex);
+  const bar = win.querySelector(".window-bar");
+  let drag = null;
+  bar.addEventListener("pointerdown", (event) => {
+    if (event.target.closest("button")) return;
+    const rect = win.getBoundingClientRect();
+    drag = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    bar.setPointerCapture(event.pointerId);
+  });
+  bar.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    win.style.left = `${event.clientX - drag.x + win.offsetWidth / 2}px`;
+    win.style.top = `${event.clientY - drag.y + win.offsetHeight / 2}px`;
+    win.style.transform = "translate(-50%, -50%)";
+  });
+  bar.addEventListener("pointerup", () => { drag = null; });
+});
+
+function updateClock() {
+  const clock = $("#menu-clock");
+  if (!clock) return;
+  clock.textContent = new Intl.DateTimeFormat("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit"
+  }).format(new Date()).replace(" at", "");
+}
+updateClock();
+setInterval(updateClock, 30000);
